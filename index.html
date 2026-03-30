@@ -75,20 +75,6 @@
         touch-action: none;
       }
 
-      /* Film Grain Overlay */
-      #grain {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        pointer-events: none;
-        z-index: 5;
-        opacity: 0.05;
-        display: none;
-        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
-      }
-
       #header {
         position: absolute;
         top: 15px;
@@ -254,10 +240,44 @@
       }
 
       input[type="checkbox"] {
-        width: 18px;
-        height: 18px;
-        border: 2px solid #000;
+        width: 20px;
+        height: 20px;
+        border: 2.5px solid #000;
+        background: #fff;
+        box-shadow: 2px 2px 0px 0px #000;
+        appearance: none;
+        outline: none;
+        margin: 0;
+        display: inline-block;
+        vertical-align: middle;
         cursor: pointer;
+        transition:
+          box-shadow 0.1s,
+          background 0.1s;
+        position: relative;
+      }
+      input[type="checkbox"]:checked {
+        background: #000;
+        box-shadow: 2px 2px 0px 0px #000;
+      }
+      input[type="checkbox"]:checked:after {
+        content: "";
+        display: block;
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        width: 6px;
+        height: 12px;
+        border: solid #fff;
+        border-width: 0 3px 3px 0;
+        transform: translate(-50%, -50%) rotate(45deg);
+      }
+      input[type="checkbox"]:hover {
+        background: #ffe600;
+      }
+      input[type="checkbox"]:active {
+        box-shadow: 1px 1px 0px 0px #000;
+        background: #fff200;
       }
 
       #recording-overlay {
@@ -292,7 +312,6 @@
     </style>
   </head>
   <body>
-    <div id="grain"></div>
     <header id="header">
       <h1>AnimateGrid</h1>
     </header>
@@ -343,10 +362,6 @@
         <div class="checkbox-group">
           <input type="checkbox" id="useGradient" />
           <label for="useGradient">Gradient</label>
-        </div>
-        <div class="checkbox-group">
-          <input type="checkbox" id="useGrain" />
-          <label for="useGrain">Grain</label>
         </div>
       </div>
 
@@ -400,7 +415,6 @@
         lineColor: "#000000",
         peakColor: "#ffffff",
         useGradient: false,
-        useGrain: false,
       };
 
       let params = { ...DEFAULTS };
@@ -542,7 +556,6 @@
           lineColor: document.getElementById("lineColor"),
           peakColor: document.getElementById("peakColor"),
           useGradient: document.getElementById("useGradient"),
-          useGrain: document.getElementById("useGrain"),
         };
 
         const labels = {
@@ -587,13 +600,6 @@
           material.uniforms.uUseGradient.value = params.useGradient ? 1.0 : 0.0;
           document.getElementById("peak-color-group").style.display =
             params.useGradient ? "block" : "none";
-        };
-
-        inputs.useGrain.onchange = (e) => {
-          params.useGrain = e.target.checked;
-          document.getElementById("grain").style.display = params.useGrain
-            ? "block"
-            : "none";
         };
 
         inputs.bgColor.oninput = (e) => {
@@ -644,7 +650,6 @@
           scene.background.set(params.bgColor);
           document.body.style.setProperty("--bg-color", params.bgColor);
           document.getElementById("peak-color-group").style.display = "none";
-          document.getElementById("grain").style.display = "none";
 
           Object.keys(inputs).forEach((key) => {
             if (inputs[key].type === "checkbox")
