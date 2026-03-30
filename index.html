@@ -1,0 +1,722 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- Primary Meta Tags -->
+    <title>AnimateGrid | Interactive 3D Wavy Grid Generator</title>
+    <meta
+      name="title"
+      content="AnimateGrid | Interactive 3D Wavy Grid Generator"
+    />
+    <meta
+      name="description"
+      content="AnimateGrid is a powerful WebGL tool for creating interactive, customizable 3D wavy grids. Adjust intensity, resolution, and speed. Export as high-quality MP4 or PNG for social media and design projects."
+    />
+    <meta
+      name="keywords"
+      content="AnimateGrid, 3D Grid Generator, WebGL, Three.js, Animated Background, Neobrutalism Design, MP4 Export, Vertical Video Generator, Graphic Design Tool"
+    />
+    <meta name="author" content="AnimateGrid Labs" />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://animategrid.app/" />
+    <meta
+      property="og:title"
+      content="AnimateGrid | Interactive 3D Wavy Grid Generator"
+    />
+    <meta
+      property="og:description"
+      content="Design and export stunning interactive 3D grids. Perfect for reels, backgrounds, and digital art."
+    />
+    <meta property="og:image" content="https://animategrid.app/preview.png" />
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content="https://animategrid.app/" />
+    <meta
+      property="twitter:title"
+      content="AnimateGrid | Interactive 3D Wavy Grid Generator"
+    />
+    <meta
+      property="twitter:description"
+      content="Design and export stunning interactive 3D grids. Perfect for reels, backgrounds, and digital art."
+    />
+    <meta
+      property="twitter:image"
+      content="https://animategrid.app/preview.png"
+    />
+
+    <!-- Space Grotesk Font -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <style>
+      :root {
+        --bg-color: #ffdd00;
+        --line-color: #000000;
+        --peak-color: #ffffff;
+        --border-val: 3px solid #000;
+        --shadow-val: 4px 4px 0px 0px #000;
+        --panel-bg: #ffffff;
+      }
+
+      body {
+        margin: 0;
+        overflow: hidden;
+        background-color: var(--bg-color);
+        font-family: "Space Grotesk", sans-serif;
+        color: #000;
+        touch-action: none;
+      }
+
+      /* Film Grain Overlay */
+      #grain {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        z-index: 5;
+        opacity: 0.05;
+        display: none;
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+      }
+
+      #header {
+        position: absolute;
+        top: 15px;
+        left: 15px;
+        background: #fff;
+        border: var(--border-val);
+        box-shadow: var(--shadow-val);
+        padding: 8px 15px;
+        z-index: 20;
+        pointer-events: none;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: 1rem;
+        text-transform: uppercase;
+        font-weight: 700;
+      }
+
+      #toggle-btn {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        width: auto;
+        min-width: 100px;
+        background: #fff;
+        border: var(--border-val);
+        box-shadow: var(--shadow-val);
+        padding: 10px 15px;
+        z-index: 110;
+        cursor: pointer;
+        font-family: inherit;
+        font-weight: 700;
+        text-transform: uppercase;
+        font-size: 0.7rem;
+        transition: transform 0.1s;
+      }
+
+      #toggle-btn:active {
+        transform: translate(2px, 2px);
+        box-shadow: 2px 2px 0px 0px #000;
+      }
+
+      #footer {
+        position: absolute;
+        bottom: 15px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #fff;
+        border: var(--border-val);
+        box-shadow: var(--shadow-val);
+        padding: 6px 15px;
+        z-index: 15;
+        font-size: 0.65rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        white-space: nowrap;
+        pointer-events: none;
+        transition: opacity 0.3s;
+      }
+
+      #controls {
+        position: absolute;
+        top: 75px;
+        right: 15px;
+        width: 280px;
+        max-width: calc(100vw - 30px);
+        max-height: calc(100vh - 120px);
+        background: var(--panel-bg);
+        border: var(--border-val);
+        box-shadow: var(--shadow-val);
+        padding: 20px;
+        z-index: 100;
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+        overflow-y: auto;
+        transition:
+          transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+          opacity 0.2s;
+        box-sizing: border-box;
+      }
+
+      #controls.hidden {
+        transform: translateX(120%);
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      .control-group {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+      }
+
+      label {
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        display: flex;
+        justify-content: space-between;
+      }
+
+      input[type="range"] {
+        -webkit-appearance: none;
+        width: 100%;
+        height: 10px;
+        background: #eee;
+        border: 2px solid #000;
+        outline: none;
+      }
+
+      input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 18px;
+        height: 18px;
+        background: var(--bg-color);
+        border: 2px solid #000;
+        cursor: pointer;
+      }
+
+      .row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+
+      input[type="color"],
+      select,
+      button {
+        width: 100%;
+        border: var(--border-val);
+        background: #fff;
+        cursor: pointer;
+        padding: 8px;
+        box-sizing: border-box;
+        font-family: inherit;
+        font-weight: 700;
+        text-transform: uppercase;
+        font-size: 0.7rem;
+      }
+
+      .btn-black {
+        background: #000;
+        color: #fff;
+      }
+      .btn-black:hover {
+        background: #333;
+      }
+      .btn-black:active {
+        transform: translate(2px, 2px);
+        box-shadow: 2px 2px 0px 0px #000;
+      }
+
+      .checkbox-group {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+      }
+
+      input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        border: 2px solid #000;
+        cursor: pointer;
+      }
+
+      #recording-overlay {
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #000;
+        color: #fff;
+        padding: 10px 20px;
+        border: var(--border-val);
+        box-shadow: var(--shadow-val);
+        font-weight: 700;
+        z-index: 200;
+        display: none;
+        text-transform: uppercase;
+        font-size: 0.8rem;
+      }
+
+      @media (max-width: 600px) {
+        #controls {
+          width: auto;
+          left: 15px;
+          right: 15px;
+        }
+        #footer {
+          font-size: 0.55rem;
+          bottom: 10px;
+          padding: 4px 10px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="grain"></div>
+    <header id="header">
+      <h1>AnimateGrid</h1>
+    </header>
+
+    <button id="toggle-btn" aria-label="Open settings">Settings</button>
+    <div id="recording-overlay">Recording Loop...</div>
+
+    <main id="controls" role="form" aria-labelledby="header">
+      <div class="control-group">
+        <label>Wave Intensity <span id="amp-val">5.0</span></label>
+        <input
+          type="range"
+          id="amplitude"
+          min="0"
+          max="15"
+          step="0.1"
+          value="5.0"
+        />
+      </div>
+      <div class="control-group">
+        <label>Mesh Quality <span id="seg-val">120</span></label>
+        <input
+          type="range"
+          id="segments"
+          min="20"
+          max="250"
+          step="5"
+          value="120"
+        />
+      </div>
+      <div class="control-group">
+        <label>Grid Thickness <span id="thick-val">1.5</span></label>
+        <input
+          type="range"
+          id="thickness"
+          min="0.5"
+          max="5"
+          step="0.1"
+          value="1.5"
+        />
+      </div>
+      <div class="control-group">
+        <label>Speed <span id="speed-val">0.6</span></label>
+        <input type="range" id="speed" min="0" max="3" step="0.1" value="0.6" />
+      </div>
+
+      <div class="row">
+        <div class="checkbox-group">
+          <input type="checkbox" id="useGradient" />
+          <label for="useGradient">Gradient</label>
+        </div>
+        <div class="checkbox-group">
+          <input type="checkbox" id="useGrain" />
+          <label for="useGrain">Grain</label>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="control-group">
+          <label>Background</label>
+          <input type="color" id="bgColor" value="#ffdd00" />
+        </div>
+        <div class="control-group">
+          <label>Grid Lines</label>
+          <input type="color" id="lineColor" value="#000000" />
+        </div>
+      </div>
+
+      <div class="control-group" id="peak-color-group" style="display: none">
+        <label>Peak Color</label>
+        <input type="color" id="peakColor" value="#ffffff" />
+      </div>
+
+      <div
+        style="border-top: 2px dashed #000; margin: 5px 0"
+        aria-hidden="true"
+      ></div>
+
+      <div class="row">
+        <button class="btn-black" id="snap-btn">Snapshot</button>
+        <select id="export-format">
+          <option value="16:9">16:9</option>
+          <option value="9:16">9:16</option>
+        </select>
+      </div>
+      <button class="btn-black" id="record-btn" style="background: #ff4400">
+        Export MP4 Loop (12s)
+      </button>
+      <button id="reset-btn">Reset Defaults</button>
+    </main>
+
+    <footer id="footer">Warped into existence by QuizVize</footer>
+
+    <script>
+      let scene, camera, renderer, geometry, material, mesh;
+      const clock = new THREE.Clock();
+
+      const DEFAULTS = {
+        amplitude: 5.0,
+        frequency: 0.1,
+        speed: 0.6,
+        thickness: 1.5,
+        segments: 120,
+        bgColor: "#ffdd00",
+        lineColor: "#000000",
+        peakColor: "#ffffff",
+        useGradient: false,
+        useGrain: false,
+      };
+
+      let params = { ...DEFAULTS };
+      let isRecording = false;
+      let recordingStartTime = 0;
+      const RECORD_DURATION = 12.0; // Export duration set to 12s
+      const GRID_SIZE = 600;
+
+      function init() {
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color(params.bgColor);
+
+        const aspect = window.innerWidth / window.innerHeight;
+        camera = new THREE.PerspectiveCamera(35, aspect, 0.1, 2000);
+        camera.position.set(0, 95, 0);
+        camera.lookAt(0, 0, 0);
+
+        renderer = new THREE.WebGLRenderer({
+          antialias: true,
+          preserveDrawingBuffer: true,
+          alpha: true,
+        });
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        createGrid();
+        setupUI();
+
+        window.addEventListener("resize", onWindowResize);
+        animate();
+      }
+
+      function createGrid() {
+        if (mesh) {
+          scene.remove(mesh);
+          geometry.dispose();
+          material.dispose();
+        }
+
+        geometry = new THREE.PlaneBufferGeometry(
+          GRID_SIZE,
+          GRID_SIZE,
+          params.segments,
+          params.segments,
+        );
+        geometry.rotateX(-Math.PI / 2);
+
+        material = new THREE.ShaderMaterial({
+          uniforms: {
+            uTime: { value: 0.0 },
+            uColor: { value: new THREE.Color(params.lineColor) },
+            uPeakColor: { value: new THREE.Color(params.peakColor) },
+            uAmplitude: { value: params.amplitude },
+            uUseGradient: { value: params.useGradient ? 1.0 : 0.0 },
+            uGridSize: { value: GRID_SIZE },
+            uThickness: { value: params.thickness },
+            uSegments: { value: params.segments },
+          },
+          vertexShader: `
+                    uniform float uTime;
+                    uniform float uAmplitude;
+                    uniform float uGridSize;
+                    varying float vHeight;
+                    varying vec3 vPos;
+                    varying vec2 vUv;
+
+                    void main() {
+                        vUv = uv;
+                        vec3 pos = position;
+
+                        float t = uTime;
+                        float w = 0.0;
+
+                        // Phase-locked wave harmonics for perfect looping
+                        // Speed multipliers are integers relative to the 2*PI cycle
+                        w += sin(pos.x * 0.08 + t * 1.0) * cos(pos.z * 0.07 + t * 1.0);
+                        w += sin(pos.x * 0.15 - t * 2.0) * sin(pos.z * 0.12 + t * 2.0) * 0.4;
+                        w += cos(pos.x * 0.04 + pos.z * 0.04 + t * 1.0) * 0.6;
+
+                        float dist = length(pos.xz) / (uGridSize * 0.5);
+                        float falloff = exp(-dist * dist * 3.0);
+
+                        pos.y += w * uAmplitude * falloff;
+
+                        vHeight = pos.y;
+                        vPos = pos;
+                        gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+                    }
+                `,
+          fragmentShader: `
+                    uniform vec3 uColor;
+                    uniform vec3 uPeakColor;
+                    uniform float uUseGradient;
+                    uniform float uGridSize;
+                    uniform float uThickness;
+                    uniform float uSegments;
+                    varying float vHeight;
+                    varying vec3 vPos;
+                    varying vec2 vUv;
+
+                    float grid(vec2 uv, float thickness) {
+                        vec2 grid = abs(fract(uv - 0.5) - 0.5) / fwidth(uv);
+                        float line = min(grid.x, grid.y);
+                        return 1.0 - smoothstep(thickness - 0.5, thickness + 0.5, line);
+                    }
+
+                    void main() {
+                        float dist = length(vPos.xz) / (uGridSize * 0.5);
+                        float edgeFade = smoothstep(1.0, 0.6, dist);
+                        float g = grid(vUv * uSegments, uThickness);
+
+                        if(g < 0.01) discard;
+
+                        vec3 finalColor = uColor;
+                        if(uUseGradient > 0.5) {
+                            float mixFactor = clamp((vHeight + 5.0) / 10.0, 0.0, 1.0);
+                            finalColor = mix(uColor, uPeakColor, mixFactor);
+                        }
+
+                        gl_FragColor = vec4(finalColor, g * edgeFade * 0.9);
+                    }
+                `,
+          transparent: true,
+          extensions: { derivatives: true },
+        });
+
+        mesh = new THREE.Mesh(geometry, material);
+        scene.add(mesh);
+      }
+
+      function setupUI() {
+        const inputs = {
+          amplitude: document.getElementById("amplitude"),
+          segments: document.getElementById("segments"),
+          thickness: document.getElementById("thickness"),
+          speed: document.getElementById("speed"),
+          bgColor: document.getElementById("bgColor"),
+          lineColor: document.getElementById("lineColor"),
+          peakColor: document.getElementById("peakColor"),
+          useGradient: document.getElementById("useGradient"),
+          useGrain: document.getElementById("useGrain"),
+        };
+
+        const labels = {
+          amplitude: document.getElementById("amp-val"),
+          segments: document.getElementById("seg-val"),
+          thickness: document.getElementById("thick-val"),
+          speed: document.getElementById("speed-val"),
+        };
+
+        document.getElementById("toggle-btn").onclick = () => {
+          const ctrls = document.getElementById("controls");
+          ctrls.classList.toggle("hidden");
+          document.getElementById("toggle-btn").innerText =
+            ctrls.classList.contains("hidden") ? "Settings" : "Close";
+        };
+
+        inputs.amplitude.oninput = (e) => {
+          params.amplitude = parseFloat(e.target.value);
+          material.uniforms.uAmplitude.value = params.amplitude;
+          labels.amplitude.innerText = params.amplitude.toFixed(1);
+        };
+
+        inputs.segments.onchange = (e) => {
+          params.segments = parseInt(e.target.value);
+          labels.segments.innerText = params.segments;
+          createGrid();
+        };
+
+        inputs.thickness.oninput = (e) => {
+          params.thickness = parseFloat(e.target.value);
+          material.uniforms.uThickness.value = params.thickness;
+          labels.thickness.innerText = params.thickness.toFixed(1);
+        };
+
+        inputs.speed.oninput = (e) => {
+          params.speed = parseFloat(e.target.value);
+          labels.speed.innerText = params.speed.toFixed(1);
+        };
+
+        inputs.useGradient.onchange = (e) => {
+          params.useGradient = e.target.checked;
+          material.uniforms.uUseGradient.value = params.useGradient ? 1.0 : 0.0;
+          document.getElementById("peak-color-group").style.display =
+            params.useGradient ? "block" : "none";
+        };
+
+        inputs.useGrain.onchange = (e) => {
+          params.useGrain = e.target.checked;
+          document.getElementById("grain").style.display = params.useGrain
+            ? "block"
+            : "none";
+        };
+
+        inputs.bgColor.oninput = (e) => {
+          params.bgColor = e.target.value;
+          scene.background.set(params.bgColor);
+          document.body.style.setProperty("--bg-color", params.bgColor);
+        };
+
+        inputs.lineColor.oninput = (e) => {
+          params.lineColor = e.target.value;
+          material.uniforms.uColor.value.set(params.lineColor);
+        };
+
+        inputs.peakColor.oninput = (e) => {
+          params.peakColor = e.target.value;
+          material.uniforms.uPeakColor.value.set(params.peakColor);
+        };
+
+        document.getElementById("snap-btn").onclick = () => {
+          const link = document.createElement("a");
+          link.download = "AnimateGrid-snapshot.png";
+          link.href = renderer.domElement.toDataURL("image/png");
+          link.click();
+        };
+
+        document.getElementById("reset-btn").onclick = () => {
+          params = { ...DEFAULTS };
+          scene.background.set(params.bgColor);
+          document.body.style.setProperty("--bg-color", params.bgColor);
+          document.getElementById("peak-color-group").style.display = "none";
+          document.getElementById("grain").style.display = "none";
+
+          Object.keys(inputs).forEach((key) => {
+            if (inputs[key].type === "checkbox")
+              inputs[key].checked = DEFAULTS[key];
+            else inputs[key].value = DEFAULTS[key];
+          });
+
+          labels.amplitude.innerText = DEFAULTS.amplitude.toFixed(1);
+          labels.segments.innerText = DEFAULTS.segments;
+          labels.thickness.innerText = DEFAULTS.thickness.toFixed(1);
+          labels.speed.innerText = DEFAULTS.speed.toFixed(1);
+
+          createGrid();
+        };
+
+        document.getElementById("record-btn").onclick = exportVideo;
+      }
+
+      async function exportVideo() {
+        if (isRecording) return;
+        isRecording = true;
+        const format = document.getElementById("export-format").value;
+        const recordBtn = document.getElementById("record-btn");
+        const overlay = document.getElementById("recording-overlay");
+        const footer = document.getElementById("footer");
+
+        recordBtn.disabled = true;
+        overlay.style.display = "block";
+        footer.style.opacity = "0";
+
+        const originalWidth = window.innerWidth;
+        const originalHeight = window.innerHeight;
+        const targetW = format === "16:9" ? 1920 : 1080;
+        const targetH = format === "16:9" ? 1080 : 1920;
+
+        renderer.setSize(targetW, targetH, false);
+        camera.aspect = targetW / targetH;
+        camera.updateProjectionMatrix();
+
+        const stream = renderer.domElement.captureStream(60);
+        const recorder = new MediaRecorder(stream, {
+          mimeType: "video/webm;codecs=vp9",
+          videoBitsPerSecond: 15000000,
+        });
+        const chunks = [];
+        recorder.ondataavailable = (e) => chunks.push(e.data);
+
+        recorder.onstop = () => {
+          const blob = new Blob(chunks, { type: "video/mp4" });
+          const a = document.createElement("a");
+          a.href = URL.createObjectURL(blob);
+          a.download = `AnimateGrid-Loop-${format.replace(":", "x")}.mp4`;
+          a.click();
+
+          isRecording = false;
+          recordBtn.disabled = false;
+          overlay.style.display = "none";
+          footer.style.opacity = "1";
+          renderer.setSize(originalWidth, originalHeight);
+          camera.aspect = originalWidth / originalHeight;
+          camera.updateProjectionMatrix();
+        };
+
+        // Start time capture
+        recordingStartTime = clock.getElapsedTime();
+        recorder.start();
+
+        setTimeout(() => recorder.stop(), RECORD_DURATION * 1000);
+      }
+
+      function onWindowResize() {
+        if (isRecording) return;
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      }
+
+      function animate() {
+        requestAnimationFrame(animate);
+
+        // Seamless loop logic: normalizes time over the RECORD_DURATION cycle
+        const totalElapsed = isRecording
+          ? clock.getElapsedTime() - recordingStartTime
+          : clock.getElapsedTime();
+        const progress = (totalElapsed % RECORD_DURATION) / RECORD_DURATION;
+        const loopTime = progress * Math.PI * 2.0;
+
+        material.uniforms.uTime.value = loopTime * params.speed;
+        renderer.render(scene, camera);
+      }
+
+      window.onload = init;
+    </script>
+  </body>
+</html>
