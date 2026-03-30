@@ -613,10 +613,30 @@
         };
 
         document.getElementById("snap-btn").onclick = () => {
+          const format = document.getElementById("export-format").value;
+          const originalWidth = window.innerWidth;
+          const originalHeight = window.innerHeight;
+          const targetW = format === "16:9" ? 1920 : 1080;
+          const targetH = format === "16:9" ? 1080 : 1920;
+
+          // Save current renderer/camera state
+          const prevSize = renderer.getSize(new THREE.Vector2());
+          const prevAspect = camera.aspect;
+
+          renderer.setSize(targetW, targetH, false);
+          camera.aspect = targetW / targetH;
+          camera.updateProjectionMatrix();
+          renderer.render(scene, camera);
+
           const link = document.createElement("a");
-          link.download = "AnimateGrid-snapshot.png";
+          link.download = `AnimateGrid-snapshot-${format.replace(":", "x")}.png`;
           link.href = renderer.domElement.toDataURL("image/png");
           link.click();
+
+          // Restore renderer/camera state
+          renderer.setSize(prevSize.x, prevSize.y);
+          camera.aspect = prevAspect;
+          camera.updateProjectionMatrix();
         };
 
         document.getElementById("reset-btn").onclick = () => {
